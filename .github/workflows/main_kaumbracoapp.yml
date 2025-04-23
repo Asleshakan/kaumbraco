@@ -1,4 +1,4 @@
-name: Build and deploy Umbraco to Azure Web App - kaumbracoapp
+name: Build and deploy ASP.Net Core app to Azure Web App - kaumbracoapp
 
 on:
   push:
@@ -10,55 +10,44 @@ jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read
+      contents: read #This is required for actions/checkout
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup .NET SDK
+      - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.x'
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Build with dotnet
+        run: dotnet build --configuration Release
 
-      - name: Build app
-        run: dotnet build --no-restore --configuration Release
+      - name: dotnet publish
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
-      - name: Publish app
-        run: dotnet publish --no-build -c Release -o ./publish_output
-
-      # Optional: Copy SQLite file if pre-existing
-      - name: Copy SQLite DB file (if it exists)
-        run: |
-             New-Item -ItemType Directory -Force -Path ./publish_output/App_Data
-             if (Test-Path ./App_Data/Umbraco.sqlite.db) {
-             Copy-Item -Path ./App_Data/Umbraco.sqlite.db -Destination ./publish_output/App_Data/
-             }
-
-      - name: Upload artifact for deployment
+      - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: umbraco-app
-          path: ./publish_output
+          name: .net-app
+          path: ${{env.DOTNET_ROOT}}/myapp
 
   deploy:
     runs-on: windows-latest
     needs: build
     environment:
       name: 'Production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write
-      contents: read
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
-      - name: Download build artifact
+      - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: umbraco-app
-
+          name: .net-app
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -67,8 +56,10 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_0734091D0AA74A48BCA1185F21D7ADE7 }}
 
       - name: Deploy to Azure Web App
+        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'kaumbracoapp'
           slot-name: 'Production'
           package: .
+          
