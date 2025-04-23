@@ -1,4 +1,4 @@
-name: Build and deploy Umbraco to Azure Web App - kaumbracoapp2
+name: Build and deploy Umbraco to Azure Web App - kaumbracoapp
 
 on:
   push:
@@ -69,6 +69,6 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'kaumbracoapp2'
+          app-name: 'kaumbracoapp'
           slot-name: 'Production'
           package: .
