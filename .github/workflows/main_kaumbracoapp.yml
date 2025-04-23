@@ -33,10 +33,10 @@ jobs:
       # Optional: Copy SQLite file if pre-existing
       - name: Copy SQLite DB file (if it exists)
         run: |
-          mkdir -p ./publish_output/App_Data
-          if exist ./App_Data/Umbraco.sqlite.db (
-            copy .\App_Data\Umbraco.sqlite.db .\publish_output\App_Data\
-          )
+             New-Item -ItemType Directory -Force -Path ./publish_output/App_Data
+             if (Test-Path ./App_Data/Umbraco.sqlite.db) {
+             Copy-Item -Path ./App_Data/Umbraco.sqlite.db -Destination ./publish_output/App_Data/
+             }
 
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
